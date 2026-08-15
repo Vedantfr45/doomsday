@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AVENGERS: DOOMSDAY — S.H.I.E.L.D. DATABASE</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
+:root{--green:#58e85e;--green-soft:#a9f5ad;--bg:#020403;--text:#e7ede8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Space Mono",monospace;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;z-index:-5;background:linear-gradient(rgba(1,4,2,.74),rgba(1,6,2,.96)),url("doomsday-background.png") center/cover no-repeat;filter:saturate(.72) contrast(1.08);transform:scale(1.02)}
+body::after{content:"";position:fixed;inset:0;z-index:-4;background:radial-gradient(circle at 50% 18%,rgba(88,232,94,.10),transparent 30%),linear-gradient(90deg,rgba(0,0,0,.48),transparent 28%,transparent 72%,rgba(0,0,0,.52));pointer-events:none}
+.scanlines{position:fixed;inset:0;z-index:50;pointer-events:none;opacity:.08;background:repeating-linear-gradient(to bottom,rgba(255,255,255,.06) 0 1px,transparent 1px 5px)}
+header{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 22px;background:rgba(2,6,3,.82);border-bottom:1px solid rgba(88,232,94,.15);backdrop-filter:blur(12px)}
+.brand{font-family:"Barlow Condensed",sans-serif;font-size:22px;line-height:1;font-weight:900;letter-spacing:2px}.brand span{color:var(--green)}
+.meta{font-size:7px;letter-spacing:2px;color:#6e7b72;text-transform:uppercase}
+.back{text-decoration:none;color:#b3beb5;border:1px solid rgba(179,190,181,.28);padding:8px 10px;font-size:8px;letter-spacing:1.8px;text-transform:uppercase;transition:.2s}.back:hover{background:#b3beb5;color:#050806}
+main{width:min(1160px,calc(100% - 24px));margin:auto;padding:44px 0 70px}
+.hero{display:flex;align-items:end;justify-content:space-between;gap:30px;margin-bottom:24px}
+.eyebrow{color:var(--green);font-size:8px;letter-spacing:3.5px;text-transform:uppercase}
+h1{margin:8px 0 0;font-family:"Barlow Condensed",sans-serif;font-size:clamp(54px,7vw,90px);line-height:.82;text-transform:uppercase;letter-spacing:-1.5px}
+.intro{margin-top:12px;color:#78857c;font-size:9px;line-height:1.7;max-width:700px}
+.status{min-width:190px;text-align:right;color:#68746b;font-size:7px;line-height:1.9;letter-spacing:1.4px;text-transform:uppercase}.status strong{color:var(--green-soft)}
+.rule{height:1px;background:linear-gradient(90deg,rgba(88,232,94,.45),rgba(88,232,94,.06),transparent);margin-bottom:14px}
+.notice{border:1px solid rgba(88,232,94,.15);background:rgba(2,8,3,.52);padding:9px 11px;margin-bottom:14px;color:#617066;font-size:7px;letter-spacing:1.6px;text-transform:uppercase}.notice strong{color:var(--green)}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.card{position:relative;min-height:185px;border:1px solid rgba(88,232,94,.16);background:linear-gradient(145deg,rgba(11,25,14,.76),rgba(2,6,3,.93));overflow:hidden;transition:.22s ease}
+.card::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(88,232,94,.55),transparent)}
+.card::after{content:"";position:absolute;inset:auto -24px -36px auto;width:90px;height:90px;border-radius:50%;border:1px solid rgba(88,232,94,.10);box-shadow:0 0 0 14px rgba(88,232,94,.025),0 0 0 28px rgba(88,232,94,.012);pointer-events:none}
+.card:hover{transform:translateY(-4px);border-color:rgba(88,232,94,.50);box-shadow:0 12px 28px rgba(0,0,0,.32),0 0 20px rgba(88,232,94,.05)}
+.file{position:absolute;top:9px;left:10px;color:#6d796f;font-size:7px;letter-spacing:1.5px}
+.classification{position:absolute;right:9px;top:9px;color:var(--green);border:1px solid rgba(88,232,94,.30);padding:4px 5px;font-size:6px;letter-spacing:1.3px}
+.portrait{position:absolute;left:0;right:0;top:34px;height:77px;display:flex;align-items:center;justify-content:center}
+.silhouette{width:60px;height:60px;border-radius:50%;border:1px solid rgba(88,232,94,.16);position:relative;opacity:.55}
+.silhouette::before{content:"";position:absolute;width:22px;height:22px;border-radius:50%;left:18px;top:8px;border:1px solid rgba(88,232,94,.35)}
+.silhouette::after{content:"";position:absolute;width:38px;height:20px;left:10px;bottom:8px;border:1px solid rgba(88,232,94,.28);border-radius:22px 22px 8px 8px;border-bottom:0}
+.info{position:absolute;left:12px;right:12px;bottom:12px}
+.actor{font-family:"Barlow Condensed",sans-serif;font-size:23px;line-height:.9;font-weight:800;text-transform:uppercase;letter-spacing:.25px;max-width:95%}
+.role{margin-top:6px;color:var(--green);font-size:7px;line-height:1.45;letter-spacing:1.1px;text-transform:uppercase;max-width:98%}
+.tag{margin-top:10px;padding-top:7px;border-top:1px solid rgba(255,255,255,.07);color:#5e6a61;font-size:6px;letter-spacing:1.3px;text-transform:uppercase}.tag strong{color:#8b998f}
+
+/* Vedant is special in content, NOT in size. */
+.special .question{font-family:"Barlow Condensed",sans-serif;font-weight:900;font-size:76px;line-height:1;color:#cfe0d1;text-shadow:2px 0 var(--green),-1px 0 rgba(100,255,110,.35),0 0 22px rgba(88,232,94,.16);animation:glitch 4s infinite}
+.special{border-color:rgba(88,232,94,.31);background:linear-gradient(145deg,rgba(11,28,14,.82),rgba(2,6,3,.94))}
+.special::before{background:linear-gradient(90deg,transparent,rgba(88,232,94,.85),transparent)}
+.special .classification{color:var(--green-soft);border-color:rgba(88,232,94,.45)}
+.special .actor{color:#f0f5f0}
+.special .role{color:var(--green-soft)}
+.footer{margin-top:14px;border:1px solid rgba(88,232,94,.13);padding:10px 12px;display:flex;justify-content:space-between;gap:20px;color:#56635a;background:rgba(1,6,2,.54);font-size:7px;letter-spacing:1.5px;text-transform:uppercase}.footer strong{color:var(--green)}
+@keyframes glitch{0%,88%,100%{transform:none}90%{transform:translate(2px,-1px)}92%{transform:translate(-2px,1px)}}
+@media(max-width:900px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:650px){header{padding:12px 14px}.meta{display:none}main{padding-top:34px}.hero{display:block}.status{text-align:left;margin-top:16px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.card{min-height:175px}.footer{flex-direction:column;gap:7px}}
+@media(max-width:420px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<header>
+  <a class="back" href="index.html">← Back</a>
+  <div class="brand">AVENGERS <span>:</span> DOOMSDAY</div>
+  <div class="meta">S.H.I.E.L.D. SECURE DATABASE // FILE 2026</div>
+</header>
+<main>
+  <section class="hero">
+    <div>
+      <div class="eyebrow">S.H.I.E.L.D. // PERSONNEL ARCHIVE</div>
+      <h1>The Cast</h1>
+      <div class="intro">Cross-timeline personnel detected. Identity records are maintained under classified protocol. Visual files intentionally withheld.</div>
+    </div>
+    <div class="status">records loaded: <strong id="recordCount">31</strong><br>database status: <strong>ONLINE</strong><br>security level: <strong>10</strong></div>
+  </section>
+  <div class="rule"></div>
+  <div class="notice"><strong>WARNING:</strong> unauthorized access to personnel records is prohibited. This archive contains timeline-sensitive information.</div>
+  <section class="grid" id="castGrid"></section>
+  <div class="footer"><span>TRANSMISSION INTEGRITY: <strong>STABLE</strong></span><span>VEDANT FILE: <strong>CLASSIFIED</strong></span></div>
+</main>
+<script>
+const cast=[
+["Robert Downey Jr.","Victor Von Doom / Doctor Doom"],
+["Tom Hiddleston","Loki"],
+["Lewis Pullman","Robert Reynolds / Sentry"],
+["Pedro Pascal","Reed Richards / Mister Fantastic"],
+["Vanessa Kirby","Sue Storm / Invisible Woman"],
+["Joseph Quinn","Johnny Storm / Human Torch"],
+["Ebon Moss-Bachrach","Ben Grimm / The Thing"],
+["Chris Hemsworth","Thor"],
+["Chris Evans","Steve Rogers / Captain America"],
+["Anthony Mackie","Sam Wilson / Captain America"],
+["Sebastian Stan","Bucky Barnes / Winter Soldier"],
+["Paul Rudd","Scott Lang / Ant-Man"],
+["Simu Liu","Shang-Chi"],
+["Kathryn Newton","Cassie Lang"],
+["Hayley Atwell","Peggy Carter"],
+["Vedant","Character: Unknown",true],
+["Florence Pugh","Yelena Belova / Black Widow"],
+["David Harbour","Alexei Shostakov / Red Guardian"],
+["Wyatt Russell","John Walker / U.S. Agent"],
+["Hannah John-Kamen","Ava Starr / Ghost"],
+["Patrick Stewart","Charles Xavier / Professor X"],
+["Ian McKellen","Erik Lehnsherr / Magneto"],
+["Kelsey Grammer","Hank McCoy / Beast"],
+["James Marsden","Scott Summers / Cyclops"],
+["Alan Cumming","Kurt Wagner / Nightcrawler"],
+["Rebecca Romijn","Mystique"],
+["Channing Tatum","Remy LeBeau / Gambit"],
+["Letitia Wright","Shuri / Black Panther"],
+["Winston Duke","M'Baku"],
+["Tenoch Huerta Mejia","Namor"],
+["Mabel Cadena","Namora"]
+];
+
+const grid=document.getElementById("castGrid");
+document.getElementById("recordCount").textContent=cast.length;
+
+cast.forEach((person,i)=>{
+  const [actor,role,special]=person;
+  const card=document.createElement("article");
+  card.className="card"+(special?" special":"");
+  card.innerHTML=`
+    <div class="file">FILE ${String(i+1).padStart(2,"0")}</div>
+    <div class="classification">${special?"UNKNOWN":"CONFIRMED"}</div>
+    <div class="portrait">${special?'<div class="question">?</div>':'<div class="silhouette"></div>'}</div>
+    <div class="info">
+      <div class="actor">${actor}</div>
+      <div class="role">${role}</div>
+      <div class="tag">TIMELINE STATUS // <strong>${special?"CLASSIFIED":"ACTIVE"}</strong></div>
+    </div>`;
+  grid.appendChild(card);
+});
+</script>
+</body>
+</html>

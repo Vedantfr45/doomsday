@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOOMSDAY IS COMING — Vedant Will Return</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800;900&family=Montserrat:wght@500;600;700;800&display=swap');
+
+  :root{
+    --green:#39ff55;
+    --deep:#021108;
+    --ink:#010302;
+    --white:#f5f7f4;
+    --muted:#8b958d;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%;background:#000;color:var(--white)}
+  body{
+    font-family:Montserrat,Arial,sans-serif;
+    overflow-x:hidden;
+  }
+
+  /* --- ATMOSPHERE --- */
+  .grain{
+    position:fixed;inset:-50%;z-index:20;pointer-events:none;opacity:.05;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .scanlines{
+    position:fixed;inset:0;z-index:21;pointer-events:none;opacity:.1;
+    background:repeating-linear-gradient(to bottom,rgba(255,255,255,.06) 0 1px,transparent 1px 5px);
+  }
+
+  .page{
+    min-height:100vh;
+    position:relative;
+    overflow:hidden;
+    background:
+      radial-gradient(circle at 50% 45%, rgba(34,126,50,.13), transparent 34%),
+      linear-gradient(rgba(0,0,0,.60),rgba(0,0,0,.88)),
+      #010302;
+  }
+
+  .page::before{
+    content:"";
+    position:absolute;inset:0;opacity:.28;pointer-events:none;
+    background:
+      linear-gradient(120deg,transparent 25%,rgba(28,87,36,.10) 25.2%,transparent 25.5%),
+      linear-gradient(60deg,transparent 40%,rgba(28,87,36,.08) 40.2%,transparent 40.5%);
+    background-size:310px 310px,260px 260px;
+    mix-blend-mode:screen;
+  }
+
+  /* --- HEADER --- */
+  header{
+    position:relative;
+    z-index:5;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:24px 34px;
+    font-size:9px;
+    font-weight:700;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    color:#839085;
+  }
+
+  .status{
+    display:flex;align-items:center;gap:9px;
+  }
+  .status i{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--green);
+    box-shadow:0 0 16px rgba(57,255,85,.8);
+    animation:blink 1.4s infinite;
+  }
+
+  /* --- HERO --- */
+  .hero{
+    min-height:calc(100vh - 72px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:45px 22px 55px;
+    position:relative;
+    z-index:2;
+  }
+
+  .hero-inner{
+    width:min(1120px,100%);
+    display:grid;
+    grid-template-columns:1.05fr .95fr;
+    gap:42px;
+    align-items:center;
+  }
+
+  /* LEFT: countdown */
+  .kicker{
+    font-size:11px;
+    letter-spacing:5px;
+    font-weight:800;
+    color:#cfd8d1;
+    margin-bottom:18px;
+  }
+  .kicker span{color:var(--green)}
+
+  .count-title{
+    font-size:clamp(32px,5vw,70px);
+    line-height:.95;
+    font-weight:800;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    margin:0 0 21px;
+  }
+
+  .count-title::after{
+    content:"";
+    display:block;
+    width:95px;height:2px;
+    margin-top:15px;
+    background:var(--green);
+    box-shadow:0 0 20px rgba(57,255,85,.45);
+  }
+
+  .countdown{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:8px;
+    margin-top:22px;
+  }
+
+  .unit{min-width:0}
+  .number{
+    display:block;
+    font-family:"Barlow Condensed",sans-serif;
+    font-size:clamp(42px,6vw,76px);
+    line-height:.84;
+    font-weight:700;
+    letter-spacing:4px;
+    white-space:nowrap;
+    color:#f6f7f5;
+    text-shadow:0 0 12px rgba(255,255,255,.05);
+  }
+
+  .label{
+    display:block;
+    margin-top:9px;
+    font-size:8px;
+    font-weight:800;
+    letter-spacing:3px;
+    color:#859087;
+  }
+
+  .release{
+    margin-top:24px;
+    color:#7d8980;
+    font-size:9px;
+    letter-spacing:3px;
+    text-transform:uppercase;
+  }
+  .release strong{color:var(--green)}
+
+  /* RIGHT: title card */
+  .poster-wrap{
+    position:relative;
+    min-height:530px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+  }
+
+  .poster{
+    width:min(590px,100%);
+    aspect-ratio:1/1;
+    object-fit:cover;
+    border-radius:2px;
+    filter:saturate(.80) contrast(1.13);
+    opacity:.94;
+    mix-blend-mode:screen;
+  }
+
+  .poster-glow{
+    position:absolute;
+    width:72%;
+    aspect-ratio:1;
+    border-radius:50%;
+    background:rgba(57,255,85,.12);
+    filter:blur(55px);
+    z-index:-1;
+  }
+
+  .overlay{
+    position:absolute;
+    inset:8% 5%;
+    pointer-events:none;
+    border:1px solid rgba(57,255,85,.13);
+  }
+  .overlay::before,.overlay::after{
+    content:"";
+    position:absolute;
+    width:28px;height:28px;
+    border-color:rgba(57,255,85,.65);
+  }
+  .overlay::before{top:-1px;left:-1px;border-top:1px solid;border-left:1px solid}
+  .overlay::after{bottom:-1px;right:-1px;border-right:1px solid;border-bottom:1px solid}
+
+  .return{
+    margin-top:32px;
+    position:relative;
+  }
+  .return .eyebrow{
+    color:#718075;
+    font-size:8px;
+    letter-spacing:4px;
+    text-transform:uppercase;
+  }
+  .return h2{
+    margin:10px 0 5px;
+    font-family:"Barlow Condensed",sans-serif;
+    text-transform:uppercase;
+    font-size:clamp(34px,5vw,64px);
+    line-height:.88;
+    letter-spacing:1px;
+  }
+  .return h2 span{
+    color:var(--green);
+    text-shadow:0 0 18px rgba(57,255,85,.25);
+  }
+  .return p{
+    margin:0;
+    color:#89948c;
+    font-size:10px;
+    letter-spacing:2.5px;
+  }
+
+  .buttons{
+    display:flex;gap:10px;flex-wrap:wrap;
+    margin-top:26px;
+  }
+  .btn{
+    display:inline-flex;
+    align-items:center;justify-content:center;
+    min-width:150px;
+    padding:13px 17px;
+    border:1px solid rgba(57,255,85,.6);
+    background:rgba(0,8,3,.45);
+    color:var(--green);
+    text-decoration:none;
+    font-size:9px;
+    font-weight:800;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    transition:.2s ease;
+  }
+  .btn:hover{
+    color:#031006;
+    background:var(--green);
+    box-shadow:0 0 25px rgba(57,255,85,.28);
+    transform:translateY(-2px);
+  }
+  .btn.secondary{
+    color:#b0bbb2;
+    border-color:rgba(176,187,178,.35);
+  }
+  .btn.secondary:hover{
+    color:#050706;
+    background:#b0bbb2;
+    box-shadow:0 0 25px rgba(176,187,178,.15);
+  }
+
+  .fineprint{
+    margin-top:18px;
+    color:#566158;
+    font-size:7px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+  }
+
+  @keyframes blink{50%{opacity:.35}}
+
+  @media(max-width:900px){
+    .hero-inner{grid-template-columns:1fr;gap:18px}
+    .poster-wrap{min-height:auto;order:-1}
+    .poster{width:min(500px,92vw)}
+    .hero{padding-top:25px}
+    .countdown{max-width:760px}
+  }
+
+  @media(max-width:600px){
+    header{padding:18px 14px}
+    header .right{display:none}
+    .countdown{grid-template-columns:repeat(5, minmax(48px,1fr));gap:5px}
+    .number{font-size:34px;letter-spacing:2px}
+    .label{font-size:6.5px;letter-spacing:1.6px}
+    .poster-wrap{margin-top:-10px}
+    .return h2{font-size:44px}
+    .buttons{justify-content:center}
+  }
+</style>
+</head>
+
+<body>
+<div class="grain"></div>
+<div class="scanlines"></div>
+
+<div class="page">
+  <header>
+    <div class="status"><i></i> Transmission active</div>
+    <div class="right">Project Doomsday // Vedant</div>
+  </header>
+
+  <main class="hero">
+    <div class="hero-inner">
+
+      <section>
+        <div class="kicker">MARVEL STUDIOS <span>//</span> CLASSIFIED</div>
+
+        <h1 class="count-title">Doomsday is coming</h1>
+
+        <div class="countdown">
+          <div class="unit">
+            <span class="number" id="months">00</span>
+            <span class="label">MONTHS</span>
+          </div>
+          <div class="unit">
+            <span class="number" id="days">00</span>
+            <span class="label">DAYS</span>
+          </div>
+          <div class="unit">
+            <span class="number" id="hours">00</span>
+            <span class="label">HOURS</span>
+          </div>
+          <div class="unit">
+            <span class="number" id="minutes">00</span>
+            <span class="label">MINUTES</span>
+          </div>
+          <div class="unit">
+            <span class="number" id="seconds">00</span>
+            <span class="label">SECONDS</span>
+          </div>
+        </div>
+
+        <div class="release">
+          12 . 18 . 26 <strong>|</strong> release protocol
+        </div>
+
+        <div class="return">
+          <div class="eyebrow">THE TIMELINE HAS SPOKEN</div>
+          <h2><span>Vedant</span> will return.</h2>
+          <p>in avengers: doomsday</p>
+        </div>
+
+        <div class="buttons">
+          <a href="https://youtu.be/irVNGjRFZGk?si=7o-HUx_aijd3h23C" target="_blank" class="btn">Watch Trailer</a>
+          <a href="cast.html" class="btn secondary">View Cast</a>
+        </div>
+
+        <div class="fineprint">classified transmission // do not distribute</div>
+      </section>
+
+      <section class="poster-wrap">
+        <div class="poster-glow"></div>
+        <img class="poster" src="avengers-logo.jpg" alt="Avengers Doomsday title card">
+        <div class="overlay"></div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  // Countdown target: 18 December 2026, 00:00 local time.
+  const target = new Date("2026-12-18T00:00:00").getTime();
+
+  function diffParts(ms){
+    // For the visual style, months are treated as calendar months,
+    // then the remainder is split into days/hours/minutes/seconds.
+    const now = new Date();
+    const end = new Date(target);
+
+    let cursor = new Date(now);
+    let months = 0;
+
+    while (true) {
+      const next = new Date(cursor);
+      next.setMonth(next.getMonth() + 1);
+      if (next.getTime() > target) break;
+      months++;
+      cursor = next;
+    }
+
+    const remainder = Math.max(0, target - cursor.getTime());
+    return {
+      months,
+      days: Math.floor(remainder / 86400000),
+      hours: Math.floor((remainder / 3600000) % 24),
+      minutes: Math.floor((remainder / 60000) % 60),
+      seconds: Math.floor((remainder / 1000) % 60)
+    };
+  }
+
+  function update(){
+    const d = diffParts(Math.max(0, target - Date.now()));
+    document.getElementById("months").textContent = String(d.months).padStart(2,"0");
+    document.getElementById("days").textContent = String(d.days).padStart(2,"0");
+    document.getElementById("hours").textContent = String(d.hours).padStart(2,"0");
+    document.getElementById("minutes").textContent = String(d.minutes).padStart(2,"0");
+    document.getElementById("seconds").textContent = String(d.seconds).padStart(2,"0");
+  }
+
+  update();
+  setInterval(update, 1000);
+</script>
+</body>
+</html>
