@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOOMSDAY — 3D Reveal</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800;900&family=Montserrat:wght@500;600;700;800&display=swap');
+
+  :root{
+    --green:#39ff55;
+    --white:#f5f7f4;
+    --muted:#8b958d;
+    --ink:#010302;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--ink);color:var(--white)}
+  body{font-family:Montserrat,Arial,sans-serif;overflow-x:hidden}
+
+  /* ---------- layers (back to front) ---------- */
+  #bg{
+    position:fixed;inset:-40px;z-index:0;
+    background:
+      radial-gradient(circle at 50% 40%, rgba(57,255,85,.10), transparent 45%),
+      linear-gradient(rgba(1,4,2,.55),rgba(1,4,2,.86)),
+      url("doomsday-background.png") center/cover no-repeat;
+    filter:blur(14px) saturate(.75) contrast(1.1);
+    transform:scale(1.08);
+  }
+  .bokeh{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.55;
+    background:
+      radial-gradient(circle at 12% 30%, rgba(57,255,85,.18) 0 40px, transparent 90px),
+      radial-gradient(circle at 85% 22%, rgba(120,255,140,.12) 0 60px, transparent 130px),
+      radial-gradient(circle at 78% 78%, rgba(57,255,85,.10) 0 50px, transparent 110px),
+      radial-gradient(circle at 20% 82%, rgba(200,220,200,.06) 0 70px, transparent 140px);
+    filter:blur(10px);
+  }
+  .title-layer{
+    position:fixed;inset:0;z-index:1;pointer-events:none;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .title-layer h1{
+    margin:0;font-family:"Barlow Condensed",sans-serif;font-weight:900;
+    font-size:clamp(96px,23vw,360px);line-height:.8;letter-spacing:-.01em;
+    text-transform:uppercase;color:#f3f6f2;white-space:nowrap;
+    text-shadow:0 0 60px rgba(57,255,85,.12);
+    will-change:transform,opacity;
+  }
+  #scene{position:fixed;inset:0;z-index:2;width:100%;height:100%;display:block;touch-action:pan-y;cursor:grab}
+  #scene.dragging{cursor:grabbing}
+  .grain{position:fixed;inset:-50%;z-index:4;pointer-events:none;opacity:.05;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+  .vignette{position:fixed;inset:0;z-index:3;pointer-events:none;
+    background:radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,.65) 100%)}
+
+  .ui{position:fixed;inset:0;z-index:5;pointer-events:none}
+  .ui a,.ui button{pointer-events:auto}
+
+  /* ---------- header ---------- */
+  header{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:26px 40px}
+  .left{display:flex;align-items:center;gap:22px}
+  .mark{width:30px;height:30px;display:block}
+  .menu-btn{background:none;border:0;padding:6px;cursor:pointer;display:flex;flex-direction:column;gap:5px}
+  .menu-btn i{display:block;width:20px;height:1.5px;background:var(--white)}
+  .nav{position:absolute;top:70px;left:40px;display:flex;flex-direction:column;gap:2px;
+    background:rgba(2,8,3,.86);border:1px solid rgba(57,255,85,.18);backdrop-filter:blur(10px);
+    padding:8px;opacity:0;transform:translateY(-6px);transition:.2s;pointer-events:none}
+  .nav.open{opacity:1;transform:none;pointer-events:auto}
+  .nav a{color:#cfd8d1;text-decoration:none;font-size:10px;font-weight:800;letter-spacing:3px;padding:10px 14px;text-transform:uppercase}
+  .nav a:hover,.nav a.here{color:var(--green)}
+  .pill{background:var(--white);color:#050806;text-decoration:none;border-radius:40px;
+    padding:9px 18px;font-size:9px;font-weight:800;letter-spacing:2px;text-transform:uppercase;transition:.2s}
+  .pill:hover{background:var(--green);box-shadow:0 0 24px rgba(57,255,85,.35)}
+
+  /* ---------- progress rail ---------- */
+  .rail{position:absolute;right:46px;top:26%;bottom:26%;width:1px;background:rgba(255,255,255,.18)}
+  .rail .dot{position:absolute;left:-3.5px;top:0;width:8px;height:8px;border-radius:50%;background:var(--white);box-shadow:0 0 12px rgba(255,255,255,.6)}
+  .rail .tick{position:absolute;left:-2px;width:5px;height:1px;background:rgba(255,255,255,.4)}
+
+  /* ---------- scroll button ---------- */
+  .scroll-btn{position:absolute;left:50%;bottom:58px;transform:translateX(-50%);
+    width:66px;height:66px;border-radius:50%;border:1px solid rgba(255,255,255,.7);background:rgba(0,0,0,.15);
+    color:var(--white);font:800 7px Montserrat,sans-serif;letter-spacing:2px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:.25s}
+  .scroll-btn::before{content:"";position:absolute;inset:5px;border-radius:50%;border:1px solid rgba(255,255,255,.25)}
+  .scroll-btn:hover{border-color:var(--green);color:var(--green);box-shadow:0 0 24px rgba(57,255,85,.25)}
+  .scroll-btn .chev{position:absolute;left:50%;width:7px;height:7px;border-right:1px solid currentColor;border-bottom:1px solid currentColor}
+  .scroll-btn .up{top:-16px;transform:translateX(-50%) rotate(-135deg)}
+  .scroll-btn .down{bottom:-16px;transform:translateX(-50%) rotate(45deg);animation:nudge 1.6s infinite}
+
+  /* ---------- corners ---------- */
+  .corner{position:absolute;bottom:28px;font-size:8px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#7d8980}
+  .corner.l{left:40px}.corner.r{right:40px}
+  .corner strong{color:var(--green)}
+
+  /* ---------- panels ---------- */
+  .panel{position:absolute;opacity:0;will-change:opacity,transform}
+  .eyebrow{font-size:10px;font-weight:800;letter-spacing:4px;text-transform:uppercase;color:#cfd8d1;margin-bottom:12px}
+  .eyebrow span{color:var(--green)}
+  .big{font-family:"Barlow Condensed",sans-serif;font-weight:800;text-transform:uppercase;line-height:.92;margin:0;text-shadow:0 2px 24px rgba(0,0,0,.65)}
+
+  .p0{left:0;right:0;top:0;bottom:0}
+  .p0 .kick{position:absolute;right:12%;top:calc(50% + clamp(96px,23vw,360px)*.5 + 12px);
+    font-size:9px;font-weight:800;letter-spacing:4px;color:#dfe7e0;white-space:nowrap}
+  .p0 .kick span{color:var(--green)}
+  .play{position:absolute;left:12%;top:calc(50% + clamp(96px,23vw,360px)*.5);display:flex;align-items:center;gap:12px;
+    color:var(--white);text-decoration:none;font-size:9px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase}
+  .play b{width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;transition:.2s}
+  .play b::after{content:"";border-left:8px solid currentColor;border-top:5px solid transparent;border-bottom:5px solid transparent;margin-left:2px}
+  .play:hover{color:var(--green)}.play:hover b{border-color:var(--green)}
+
+  .p1{right:12%;top:50%;transform:translateY(-50%);text-align:left}
+  .p1 .big{font-size:clamp(34px,4.6vw,66px)}
+  .p1 .big .v{color:var(--green);text-shadow:0 0 20px rgba(57,255,85,.3)}
+  .more{display:inline-block;margin-top:20px;color:#b0bbb2;text-decoration:none;font-size:9px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;border-bottom:1px solid rgba(176,187,178,.35);padding-bottom:4px}
+  .more:hover{color:var(--green);border-color:var(--green)}
+
+  .p2{left:12%;top:50%;transform:translateY(-50%)}
+  .p2 .big{font-size:clamp(46px,6.4vw,96px)}
+  .count{display:flex;gap:18px;margin-top:18px}
+  .count div{min-width:46px}
+  .count b{display:block;font-family:"Barlow Condensed",sans-serif;font-size:clamp(28px,3vw,42px);font-weight:700;line-height:.9;letter-spacing:2px}
+  .count small{display:block;margin-top:6px;font-size:7px;font-weight:800;letter-spacing:2.5px;color:#859087}
+  .sub{margin-top:16px;font-size:11px;color:#c3ccc5;letter-spacing:.5px}
+  .ghost{display:inline-block;margin-top:20px;border:1px solid rgba(255,255,255,.7);border-radius:30px;color:var(--white);
+    text-decoration:none;padding:9px 18px;font-size:8px;font-weight:800;letter-spacing:2px;text-transform:uppercase;transition:.2s}
+  .ghost:hover{border-color:var(--green);color:var(--green)}
+
+  .p3{left:0;right:0;bottom:140px;text-align:center}
+  .p3 .big{font-size:clamp(30px,3.6vw,52px)}
+  .hint{display:inline-flex;align-items:center;gap:14px;margin-top:12px;color:#aab5ac;font-size:9px;font-weight:800;letter-spacing:3px}
+  .hint i{width:34px;height:1px;background:currentColor;position:relative}
+  .hint i:first-child::before,.hint i:last-child::after{content:"";position:absolute;top:-3px;width:6px;height:6px;border-top:1px solid currentColor}
+  .hint i:first-child::before{left:0;border-left:1px solid currentColor;transform:rotate(-45deg)}
+  .hint i:last-child::after{right:0;border-right:1px solid currentColor;transform:rotate(45deg)}
+  .p3 .btns{display:flex;gap:10px;justify-content:center;margin-top:22px}
+  .p3 .ghost{margin-top:0}
+
+  /* ---------- loader ---------- */
+  .loader{position:fixed;inset:0;z-index:30;background:#010302;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .8s}
+  .loader.done{opacity:0;pointer-events:none}
+  .loader .ring{width:46px;height:46px;border-radius:50%;border:1px solid rgba(57,255,85,.2);border-top-color:var(--green);animation:spin 1s linear infinite}
+  .loader p{margin:0;font-size:9px;font-weight:800;letter-spacing:4px;color:#7d8980}
+  .loader p span{color:var(--green)}
+
+  .space{height:400vh;position:relative;z-index:-1}
+
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes nudge{50%{transform:translateX(-50%) translateY(4px) rotate(45deg)}}
+
+  @media(max-width:760px){
+    header{padding:18px 16px}
+    .nav{left:16px;top:60px}
+    .rail{right:16px}
+    .corner{bottom:18px}.corner.l{left:16px}.corner.r{right:16px}
+    .p0 .kick{right:16px;letter-spacing:3px;font-size:8px;top:calc(50% + clamp(96px,23vw,360px)*.5 + 52px)}
+    .play{left:16px}
+    .p1{right:16px;left:16px;top:auto;bottom:140px;transform:none}
+    .p1 .big{font-size:30px}
+    .p2{left:16px;right:16px;top:auto;bottom:140px;transform:none}
+    .p2 .big{font-size:52px}
+    .count{gap:10px}
+    .count div{min-width:0}
+    .p3{bottom:140px}
+    .scroll-btn{bottom:44px;width:56px;height:56px}
+  }
+</style>
+</head>
+<body>
+
+<div class="loader" id="loader"><div class="ring"></div><p>OPENING <span>//</span> TRANSMISSION</p></div>
+
+<div id="bg"></div>
+<div class="bokeh"></div>
+<div class="title-layer"><h1 id="bigTitle">Doomsday</h1></div>
+<canvas id="scene" aria-label="Rotating 3D armored figure"></canvas>
+<div class="vignette"></div>
+<div class="grain"></div>
+
+<div class="ui">
+  <header>
+    <div class="left">
+      <svg class="mark" viewBox="0 0 40 40" aria-hidden="true">
+        <circle cx="20" cy="20" r="18" fill="none" stroke="#39ff55" stroke-width="1.5"/>
+        <path d="M20 6 L27 20 L20 34 L13 20 Z" fill="none" stroke="#f5f7f4" stroke-width="1.5"/>
+        <circle cx="20" cy="20" r="2.5" fill="#39ff55"/>
+      </svg>
+      <button class="menu-btn" id="menuBtn" aria-label="Menu"><i></i><i></i><i></i></button>
+    </div>
+    <a class="pill" href="https://youtu.be/irVNGjRFZGk?si=7o-HUx_aijd3h23C" target="_blank">Watch Trailer</a>
+  </header>
+  <nav class="nav" id="nav">
+    <a href="index.html">Countdown</a>
+    <a href="reveal.html" class="here">3D Reveal</a>
+    <a href="cast.html">Cast</a>
+  </nav>
+
+  <div class="rail" id="rail"><div class="dot" id="dot"></div></div>
+
+  <!-- 0: head -->
+  <section class="panel p0" data-i="0">
+    <div class="kick">AVENGERS <span>//</span> 12 . 18 . 26</div>
+    <a class="play" href="https://youtu.be/irVNGjRFZGk?si=7o-HUx_aijd3h23C" target="_blank"><b></b>Play trailer</a>
+  </section>
+
+  <!-- 1: chest -->
+  <section class="panel p1" data-i="1">
+    <div class="eyebrow">Cast <span>//</span> confirmed</div>
+    <p class="big">Robert Downey Jr.<br>Chris Hemsworth<br>Pedro Pascal<br>Tom Hiddleston<br><span class="v">Vedant ?</span></p>
+    <a class="more" href="cast.html">Full personnel file →</a>
+  </section>
+
+  <!-- 2: feet -->
+  <section class="panel p2" data-i="2">
+    <div class="eyebrow">Release day</div>
+    <p class="big">Dec 18, 2026</p>
+    <div class="count">
+      <div><b id="months">00</b><small>MONTHS</small></div>
+      <div><b id="days">00</b><small>DAYS</small></div>
+      <div><b id="hours">00</b><small>HOURS</small></div>
+      <div><b id="minutes">00</b><small>MIN</small></div>
+      <div><b id="seconds">00</b><small>SEC</small></div>
+    </div>
+    <div class="sub">Exclusively in theatres</div>
+    <a class="ghost" href="index.html">Full countdown</a>
+  </section>
+
+  <!-- 3: full body -->
+  <section class="panel p3" data-i="3">
+    <p class="big">The timeline has spoken</p>
+    <div class="hint"><i></i>DRAG TO ROTATE<i></i></div>
+    <div class="btns">
+      <a class="ghost" href="index.html">Countdown</a>
+      <a class="ghost" href="cast.html">View cast</a>
+    </div>
+  </section>
+
+  <button class="scroll-btn" id="scrollBtn" aria-label="Next section"><span class="chev up"></span>SCROLL<span class="chev down"></span></button>
+
+  <div class="corner l">Fan-made <strong>//</strong> not affiliated</div>
+  <div class="corner r">Built by Vedant</div>
+</div>
+
+<div class="space"></div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+
+/* =========================================================
+   SETTINGS — change these if you swap in your own model
+   ========================================================= */
+const MODEL_URL = "models/figure.glb";   // drop a .glb here and it replaces the placeholder
+const FIGURE_HEIGHT = 1.9;               // every model is scaled to this height
+
+/* ---------- renderer / scene ---------- */
+const canvas = document.getElementById("scene");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+renderer.setClearColor(0x000000, 0);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
+
+const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 60);
+
+/* ---------- lights ---------- */
+scene.add(new THREE.HemisphereLight(0x9fb8a4, 0x050805, 0.35));
+
+const key = new THREE.DirectionalLight(0xfff1e0, 2.2);
+key.position.set(-2.2, 3.6, 2.8);
+key.castShadow = true;
+key.shadow.mapSize.set(1024, 1024);
+key.shadow.camera.left = -1.6; key.shadow.camera.right = 1.6;
+key.shadow.camera.top = 2.4;   key.shadow.camera.bottom = -0.4;
+key.shadow.bias = -0.0008;
+scene.add(key);
+
+const rimL = new THREE.DirectionalLight(0x39ff55, 3.2); rimL.position.set(-3, 2, -3); scene.add(rimL);
+const rimR = new THREE.DirectionalLight(0x7dffa0, 2.4); rimR.position.set(3, 1.2, -2.5); scene.add(rimR);
+const top  = new THREE.SpotLight(0xd8ffe0, 9, 6, 0.45, 0.7); top.position.set(0, 4.2, 0.4); top.target.position.set(0, 1, 0); scene.add(top, top.target);
+const mouseLight = new THREE.PointLight(0x9dffb0, 2.5, 4, 2); mouseLight.position.set(0, 1.4, 1.6); scene.add(mouseLight);
+
+/* ---------- materials ---------- */
+const M = {
+  armor:  new THREE.MeshStandardMaterial({ color: 0x23272a, metalness: 0.92, roughness: 0.3, envMapIntensity: 0.9 }),
+  dark:   new THREE.MeshStandardMaterial({ color: 0x0d1011, metalness: 0.75, roughness: 0.52, envMapIntensity: 0.6 }),
+  bronze: new THREE.MeshStandardMaterial({ color: 0x8a6b3e, metalness: 1.0, roughness: 0.28, envMapIntensity: 1.0 }),
+  glow:   new THREE.MeshBasicMaterial({ color: 0x4dff6a, toneMapped: false }),
+  cloth:  new THREE.MeshStandardMaterial({ color: 0x050706, metalness: 0.1, roughness: 0.85, side: THREE.DoubleSide, envMapIntensity: 0.15 }),
+  front:  new THREE.MeshStandardMaterial({ color: 0x030403, metalness: 0.2, roughness: 0.75, side: THREE.DoubleSide, envMapIntensity: 0.15 }),
+};
+
+/* ---------- helpers ---------- */
+const figureRoot = new THREE.Group();  // rotates with drag
+scene.add(figureRoot);
+const proc = new THREE.Group();        // the built-in placeholder figure
+figureRoot.add(proc);
+
+function part(geo, mat, x = 0, y = 0, z = 0, parent = proc) {
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(x, y, z);
+  m.castShadow = true; m.receiveShadow = true;
+  parent.add(m);
+  return m;
+}
+function lathe(points, segs = 40) {
+  return new THREE.LatheGeometry(points.map(([r, y]) => new THREE.Vector2(r, y)), segs);
+}
+// arc of a torus that wraps around the front (+z) of the body
+function frontArc(radius, tube, arc, mat, y, zScale = 1, parent = proc) {
+  const g = new THREE.Group();
+  const m = new THREE.Mesh(new THREE.TorusGeometry(radius, tube, 8, 48, arc), mat);
+  m.rotation.x = Math.PI / 2;
+  g.add(m);
+  g.rotation.y = -(Math.PI / 2 - arc / 2);
+  const w = new THREE.Group(); w.add(g); w.position.y = y; w.scale.z = zScale;
+  parent.add(w);
+  return w;
+}
+function glowTexture(inner = "rgba(120,255,140,1)") {
+  const c = document.createElement("canvas"); c.width = c.height = 128;
+  const g = c.getContext("2d"), grd = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grd.addColorStop(0, inner); grd.addColorStop(0.25, "rgba(57,255,85,.45)"); grd.addColorStop(1, "rgba(57,255,85,0)");
+  g.fillStyle = grd; g.fillRect(0, 0, 128, 128);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const GLOW_TEX = glowTexture();
+function glowSprite(x, y, z, sx, sy = sx, opacity = 0.9, parent = proc) {
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW_TEX, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity, toneMapped: false }));
+  s.position.set(x, y, z); s.scale.set(sx, sy, 1); parent.add(s); return s;
+}
+
+/* =========================================================
+   PLACEHOLDER FIGURE — an original armored "Herald" design:
+   obsidian plate, bronze trim, floating shard crown, visor slit
+   ========================================================= */
+const cloths = [];
+const crown = new THREE.Group();
+const pulse = [];   // glow sprites that breathe
+
+for (const s of [-1, 1]) {
+  const x = s * 0.12;
+  // --- boots ---
+  part(new THREE.BoxGeometry(0.12, 0.03, 0.27), M.dark, x, 0.015, 0.03);
+  part(new THREE.BoxGeometry(0.11, 0.07, 0.2), M.armor, x, 0.06, 0.0);
+  part(new THREE.SphereGeometry(0.06, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), M.armor, x, 0.03, 0.12).scale.set(1, 0.9, 1.5);
+  for (let i = 0; i < 3; i++) {
+    const l = part(new THREE.BoxGeometry(0.118, 0.014, 0.06), i === 0 ? M.bronze : M.armor, x, 0.105 - i * 0.022, 0.05 + i * 0.045);
+    l.rotation.x = -0.35;
+  }
+  part(new THREE.CylinderGeometry(0.06, 0.066, 0.08, 20), M.dark, x, 0.12, 0);
+  // --- shin + greave ---
+  part(new THREE.CylinderGeometry(0.065, 0.055, 0.4, 20), M.dark, x, 0.33, 0);
+  part(new THREE.CylinderGeometry(0.076, 0.066, 0.38, 24, 1, true, -1.15, 2.3), M.armor, x, 0.34, 0.004).material.side = THREE.DoubleSide;
+  part(new THREE.BoxGeometry(0.007, 0.24, 0.007), M.glow, x, 0.35, 0.077);
+  // --- knee ---
+  part(new THREE.SphereGeometry(0.072, 20, 14), M.armor, x, 0.55, 0.015).scale.set(1, 0.85, 1.05);
+  const fan = part(new THREE.BoxGeometry(0.11, 0.05, 0.016), M.armor, x, 0.6, 0.07); fan.rotation.x = -0.3;
+  const kspike = part(new THREE.ConeGeometry(0.018, 0.06, 6), M.bronze, x, 0.55, 0.1); kspike.rotation.x = Math.PI / 2;
+  // --- thigh + cuisse ---
+  part(new THREE.CylinderGeometry(0.095, 0.075, 0.38, 20), M.dark, x, 0.76, 0);
+  const cuisse = part(new THREE.CylinderGeometry(0.106, 0.086, 0.32, 24, 1, true, -1.2, 2.4), M.armor, x, 0.78, 0.004);
+  cuisse.material = M.armor.clone(); cuisse.material.side = THREE.DoubleSide;
+
+  // --- arm group (shoulder, arm, hand) ---
+  const arm = new THREE.Group(); arm.position.x = s * 0.03; proc.add(arm);
+  const pg = new THREE.Group(); pg.position.set(s * 0.29, 1.5, 0); pg.rotation.z = -s * 0.38; arm.add(pg);
+  [[0.145, 0], [0.138, -0.04], [0.13, -0.08]].forEach(([r, yy], i) => {
+    const d = part(new THREE.SphereGeometry(r, 28, 12, 0, Math.PI * 2, 0, Math.PI / 2), i ? M.dark : M.armor, s * 0.02 * i, yy, 0, pg);
+    d.scale.set(1, 0.72, 0.95);
+    const rim = part(new THREE.TorusGeometry(r, 0.007, 6, 40), M.bronze, s * 0.02 * i, yy, 0, pg);
+    rim.rotation.x = Math.PI / 2; rim.scale.set(1, 0.95, 1);
+  });
+  const sp1 = part(new THREE.ConeGeometry(0.024, 0.17, 6), M.bronze, s * 0.03, 0.12, -0.03, pg); sp1.rotation.z = -s * 0.25;
+  const sp2 = part(new THREE.ConeGeometry(0.018, 0.12, 6), M.bronze, s * 0.09, 0.07, 0.03, pg); sp2.rotation.z = -s * 0.75;
+  const sp3 = part(new THREE.ConeGeometry(0.016, 0.1, 6), M.bronze, s * 0.06, 0.08, -0.08, pg); sp3.rotation.set(-0.4, 0, -s * 0.5);
+  part(new THREE.BoxGeometry(0.006, 0.006, 0.16), M.glow, s * 0.07, 0.065, 0, pg).rotation.z = -s * 0.5;
+
+  // --- arm ---
+  const ua = part(new THREE.CylinderGeometry(0.058, 0.055, 0.27, 18), M.dark, s * 0.335, 1.3, 0, arm); ua.rotation.z = s * 0.08;
+  part(new THREE.CylinderGeometry(0.066, 0.062, 0.12, 18), M.armor, s * 0.33, 1.36, 0, arm).rotation.z = s * 0.08;
+  part(new THREE.SphereGeometry(0.062, 18, 12), M.armor, s * 0.348, 1.16, 0, arm);
+  const es = part(new THREE.ConeGeometry(0.018, 0.06, 6), M.bronze, s * 0.348, 1.16, -0.07, arm); es.rotation.x = -Math.PI / 2;
+  const fa = part(new THREE.CylinderGeometry(0.052, 0.066, 0.26, 18), M.dark, s * 0.362, 1.02, 0.008, arm); fa.rotation.z = s * 0.05;
+  const vb = part(new THREE.CylinderGeometry(0.062, 0.076, 0.2, 20, 1, true, s * Math.PI / 2 - 1.1, 2.2), M.armor.clone(), s * 0.362, 1.0, 0.008, arm);
+  vb.material.side = THREE.DoubleSide; vb.rotation.z = s * 0.05;
+  part(new THREE.BoxGeometry(0.006, 0.15, 0.006), M.glow, s * 0.436, 1.0, 0.008, arm);
+  part(new THREE.TorusGeometry(0.068, 0.008, 6, 28), M.bronze, s * 0.366, 0.9, 0.008, arm).rotation.x = Math.PI / 2;
+  // --- hand ---
+  part(new THREE.BoxGeometry(0.038, 0.09, 0.078), M.dark, s * 0.372, 0.84, 0.015, arm);
+  part(new THREE.BoxGeometry(0.044, 0.016, 0.084), M.bronze, s * 0.374, 0.8, 0.015, arm);
+  for (let i = 0; i < 4; i++) {
+    const f1 = part(new THREE.BoxGeometry(0.016, 0.045, 0.017), M.armor, s * 0.372, 0.768, -0.012 + i * 0.019, arm);
+    const f2 = part(new THREE.BoxGeometry(0.014, 0.035, 0.015), M.dark, s * 0.364, 0.732, -0.012 + i * 0.019, arm);
+    f1.rotation.z = s * 0.12; f2.rotation.z = s * 0.35;
+  }
+  const th = part(new THREE.BoxGeometry(0.016, 0.045, 0.016), M.armor, s * 0.356, 0.81, 0.062, arm); th.rotation.x = -0.5;
+
+  // --- cheek guard ---
+  const ck = part(new THREE.CylinderGeometry(0.121, 0.1, 0.1, 20, 1, true, s * Math.PI / 2 - 0.55, 1.1), M.dark.clone(), 0, 1.655, 0.01);
+  ck.material.side = THREE.DoubleSide; ck.scale.z = 1.12;
+}
+
+// --- pelvis, tassets, belt ---
+part(new THREE.CylinderGeometry(0.17, 0.15, 0.14, 28), M.dark, 0, 0.97, 0).scale.z = 0.75;
+for (let i = 0; i < 8; i++) {
+  const a = (i / 8) * Math.PI * 2;
+  const t = part(new THREE.CylinderGeometry(0.232, 0.275, 0.24, 10, 1, true, a - 0.33, 0.66), i % 2 ? M.dark : M.armor, 0, 0.9, 0);
+  t.scale.z = 0.8; t.material = t.material.clone(); t.material.side = THREE.DoubleSide;
+}
+const belt = part(new THREE.TorusGeometry(0.168, 0.018, 8, 40), M.bronze, 0, 1.03, 0); belt.rotation.x = Math.PI / 2; belt.scale.y = 0.76;
+part(new THREE.TorusGeometry(0.032, 0.007, 8, 28), M.glow, 0, 1.03, 0.13);
+part(new THREE.CircleGeometry(0.016, 20), M.glow, 0, 1.03, 0.131);
+pulse.push(glowSprite(0, 1.03, 0.14, 0.14));
+
+// --- abdomen bands ---
+for (let j = 0; j < 3; j++) {
+  part(new THREE.CylinderGeometry(0.168 + j * 0.008, 0.162 + j * 0.008, 0.048, 28), j % 2 ? M.dark : M.armor, 0, 1.075 + j * 0.045, 0).scale.z = 0.74;
+}
+
+// --- breastplate ---
+const chest = part(lathe([[0.16, 0], [0.2, 0.08], [0.25, 0.18], [0.278, 0.27], [0.272, 0.34], [0.215, 0.4], [0.12, 0.44], [0, 0.45]]), M.armor, 0, 1.12, 0);
+chest.scale.z = 0.7;
+frontArc(0.279, 0.006, 2.2, M.bronze, 1.39, 0.7);
+frontArc(0.273, 0.005, 1.6, M.glow, 1.46, 0.7);
+// chest core
+part(new THREE.TorusGeometry(0.062, 0.012, 10, 36), M.bronze, 0, 1.34, 0.186);
+part(new THREE.TorusGeometry(0.044, 0.009, 10, 36), M.glow, 0, 1.34, 0.19);
+part(new THREE.CircleGeometry(0.028, 24), M.glow, 0, 1.34, 0.192);
+for (let k = 0; k < 6; k++) {
+  const a = (k / 6) * Math.PI * 2;
+  const sh = part(new THREE.BoxGeometry(0.006, 0.022, 0.006), M.glow, Math.sin(a) * 0.082, 1.34 + Math.cos(a) * 0.082, 0.188);
+  sh.rotation.z = -a;
+}
+pulse.push(glowSprite(0, 1.34, 0.21, 0.42));
+// chevron runes under the core
+for (const s of [-1, 1]) {
+  const r = part(new THREE.BoxGeometry(0.11, 0.006, 0.006), M.glow, s * 0.06, 1.245, 0.162); r.rotation.z = s * 0.45;
+  const r2 = part(new THREE.BoxGeometry(0.08, 0.005, 0.005), M.glow, s * 0.05, 1.205, 0.152); r2.rotation.z = s * 0.45;
+}
+
+// --- gorget ---
+part(new THREE.CylinderGeometry(0.12, 0.155, 0.05, 28), M.bronze, 0, 1.55, 0).scale.z = 0.8;
+part(new THREE.CylinderGeometry(0.096, 0.118, 0.06, 28), M.armor, 0, 1.595, 0);
+part(new THREE.CylinderGeometry(0.086, 0.092, 0.05, 24), M.dark, 0, 1.64, 0);
+
+// --- helm ---
+const helm = part(lathe([[0.085, 0], [0.105, 0.03], [0.115, 0.08], [0.118, 0.13], [0.112, 0.18], [0.095, 0.22], [0.066, 0.25], [0.03, 0.266], [0, 0.27]]), M.armor, 0, 1.6, 0);
+helm.scale.z = 1.12;
+const visor = part(new THREE.CylinderGeometry(0.12, 0.124, 0.12, 32, 1, true, -1.05, 2.1), M.dark.clone(), 0, 1.7, 0);
+visor.material.side = THREE.DoubleSide; visor.scale.z = 1.14;
+frontArc(0.128, 0.0055, 1.7, M.glow, 1.735, 1.14);              // visor slit
+frontArc(0.124, 0.004, 1.2, M.bronze, 1.765, 1.13);
+part(new THREE.BoxGeometry(0.014, 0.06, 0.23), M.bronze, 0, 1.86, -0.01); // crest fin
+const jaw = part(new THREE.ConeGeometry(0.075, 0.07, 4), M.dark, 0, 1.625, 0.07); jaw.rotation.set(Math.PI, Math.PI / 4, 0); jaw.scale.z = 0.8;
+pulse.push(glowSprite(0, 1.735, 0.16, 0.34, 0.09, 0.85));
+
+// --- floating shard crown ---
+crown.position.set(0, 1.99, -0.01); crown.rotation.x = 0.12; proc.add(crown);
+const shards = [];
+for (let k = 0; k < 9; k++) {
+  const a = (k / 9) * Math.PI * 2;
+  const sh = part(new THREE.OctahedronGeometry(0.03), k % 3 === 0 ? M.glow : M.bronze, Math.sin(a) * 0.17, 0, Math.cos(a) * 0.17, crown);
+  sh.scale.set(0.55, 2.5, 0.55);
+  sh.userData = { a, base: 0 };
+  shards.push(sh);
+}
+const halo = part(new THREE.TorusGeometry(0.2, 0.0025, 6, 80), M.glow, 0, -0.03, 0, crown); halo.rotation.x = Math.PI / 2;
+pulse.push(glowSprite(0, 1.99, 0, 0.75, 0.5, 0.35));
+
+// --- cloth (cape + tabard) ---
+function makeCloth(w, h, sx, sy, place, shape, mat = M.cloth) {
+  const geo = new THREE.PlaneGeometry(w, h, sx, sy);
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const v = new THREE.Vector3().fromBufferAttribute(pos, i);
+    shape(v, w, h);
+    pos.setXYZ(i, v.x, v.y, v.z);
+  }
+  geo.computeVertexNormals();
+  const mesh = part(geo, mat, place[0], place[1], place[2]);
+  cloths.push({ mesh, base: Float32Array.from(pos.array), h });
+  return mesh;
+}
+// cape: narrow at shoulders, flares at the hem, wraps forward at the edges
+makeCloth(0.72, 1.44, 14, 28, [0, 0.8, -0.2], (v, w, h) => {
+  const u = 0.5 - v.y / h;           // 0 top -> 1 bottom
+  v.x *= 0.72 + u * 0.55;
+  v.z = (v.x * v.x) * 0.9 - u * 0.12;
+});
+// front tabard
+makeCloth(0.2, 0.78, 4, 18, [0, 0.62, 0.225], (v, w, h) => {
+  const u = 0.5 - v.y / h;
+  v.x *= 1 + u * 0.25;
+  v.z = u * 0.05;
+}, M.front);
+for (const s of [-1, 1]) {   // bronze edge lines on the tabard
+  const e = part(new THREE.BoxGeometry(0.005, 0.74, 0.005), M.bronze, s * 0.112, 0.63, 0.25); e.rotation.set(0.07, 0, s * 0.035);
+}
+part(new THREE.TorusGeometry(0.03, 0.005, 6, 24), M.glow, 0, 0.86, 0.232);
+part(new THREE.BoxGeometry(0.005, 0.12, 0.004), M.glow, 0, 0.77, 0.234);
+part(new THREE.BoxGeometry(0.22, 0.012, 0.01), M.bronze, 0, 0.25, 0.27).rotation.x = 0.06;
+
+/* ---------- ground, smoke, embers ---------- */
+const shadowPlane = new THREE.Mesh(new THREE.PlaneGeometry(8, 8), new THREE.ShadowMaterial({ opacity: 0.6 }));
+shadowPlane.rotation.x = -Math.PI / 2; shadowPlane.receiveShadow = true; scene.add(shadowPlane);
+
+function radialTex(stops) {
+  const c = document.createElement("canvas"); c.width = c.height = 256;
+  const g = c.getContext("2d"), grd = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+  stops.forEach(([p, col]) => grd.addColorStop(p, col));
+  g.fillStyle = grd; g.fillRect(0, 0, 256, 256);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const floor = new THREE.Mesh(new THREE.CircleGeometry(3.2, 64), new THREE.MeshBasicMaterial({
+  map: radialTex([[0, "rgba(6,14,8,.95)"], [0.5, "rgba(4,10,6,.6)"], [1, "rgba(0,0,0,0)"]]), transparent: true, depthWrite: false }));
+floor.rotation.x = -Math.PI / 2; floor.position.y = -0.001; scene.add(floor);
+const ring = new THREE.Mesh(new THREE.RingGeometry(0.42, 0.43, 96), new THREE.MeshBasicMaterial({ color: 0x39ff55, transparent: true, opacity: 0.35, toneMapped: false }));
+ring.rotation.x = -Math.PI / 2; ring.position.y = 0.002; scene.add(ring);
+const ring2 = new THREE.Mesh(new THREE.RingGeometry(0.62, 0.624, 96, 1, 0, Math.PI * 1.3), ring.material.clone());
+ring2.material.opacity = 0.18; ring2.rotation.x = -Math.PI / 2; ring2.position.y = 0.002; scene.add(ring2);
+
+// smoke
+function smokeTexture() {
+  const c = document.createElement("canvas"); c.width = c.height = 256;
+  const g = c.getContext("2d");
+  for (let i = 0; i < 28; i++) {
+    const x = 128 + (Math.random() - 0.5) * 120, y = 128 + (Math.random() - 0.5) * 80, r = 30 + Math.random() * 60;
+    const grd = g.createRadialGradient(x, y, 0, x, y, r);
+    grd.addColorStop(0, "rgba(160,190,165,.10)"); grd.addColorStop(1, "rgba(160,190,165,0)");
+    g.fillStyle = grd; g.fillRect(0, 0, 256, 256);
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const SMOKE = smokeTexture();
+const smoke = [];
+for (let i = 0; i < 16; i++) {
+  const m = new THREE.SpriteMaterial({ map: SMOKE, transparent: true, depthWrite: false, opacity: 0.16, color: 0x5f7a66 });
+  const s = new THREE.Sprite(m);
+  const a = Math.random() * Math.PI * 2, r = 0.3 + Math.random() * 1.0;
+  s.position.set(Math.cos(a) * r, 0.08 + Math.random() * 0.25, Math.sin(a) * r);
+  const sc = 1 + Math.random() * 1.4; s.scale.set(sc * 1.6, sc * 0.7, 1);
+  s.userData = { a, r, sp: (Math.random() - 0.5) * 0.06, rot: (Math.random() - 0.5) * 0.1 };
+  scene.add(s); smoke.push(s);
+}
+
+// embers
+const EMBERS = 420;
+const eGeo = new THREE.BufferGeometry();
+const ePos = new Float32Array(EMBERS * 3), eSpd = new Float32Array(EMBERS);
+function seedEmber(i, randomY) {
+  const a = Math.random() * Math.PI * 2, r = 0.2 + Math.random() * 1.5;
+  ePos[i * 3] = Math.cos(a) * r; ePos[i * 3 + 1] = randomY ? Math.random() * 2.6 : 0; ePos[i * 3 + 2] = Math.sin(a) * r;
+  eSpd[i] = 0.05 + Math.random() * 0.18;
+}
+for (let i = 0; i < EMBERS; i++) seedEmber(i, true);
+eGeo.setAttribute("position", new THREE.BufferAttribute(ePos, 3));
+const embers = new THREE.Points(eGeo, new THREE.PointsMaterial({
+  size: 0.018, map: GLOW_TEX, color: 0x8dff9f, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true, toneMapped: false }));
+scene.add(embers);
+
+/* ---------- optional: load your own .glb ---------- */
+new GLTFLoader().load(MODEL_URL, (gltf) => {
+  const model = gltf.scene;
+  let box = new THREE.Box3().setFromObject(model);
+  const size = box.getSize(new THREE.Vector3());
+  model.scale.setScalar(FIGURE_HEIGHT / size.y);
+  box = new THREE.Box3().setFromObject(model);
+  const c = box.getCenter(new THREE.Vector3());
+  model.position.x -= c.x; model.position.z -= c.z; model.position.y -= box.min.y;
+  model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  proc.visible = false;
+  figureRoot.add(model);
+  console.info("Loaded", MODEL_URL);
+}, undefined, () => console.info(`No ${MODEL_URL} found, using the built-in placeholder figure.`));
+
+/* =========================================================
+   CAMERA SHOTS — one per scroll section
+   pos = camera position, tgt = where it looks
+   ========================================================= */
+const SHOTS = [
+  { pos: [0.0, 1.72, 2.1],  tgt: [0.0, 1.7, 0] },   // 0 head + title
+  { pos: [0.62, 1.3, 2.3],  tgt: [0.55, 1.26, 0] },  // 1 chest + cast (figure sits left)
+  { pos: [-0.5, 0.42, 2.15], tgt: [-0.52, 0.24, 0] }, // 2 feet + release date (figure sits right)
+  { pos: [0.0, 0.95, 5.4],  tgt: [0.0, 0.72, 0] },   // 3 full body
+];
+const N = SHOTS.length - 1;
+const smoother = t => t * t * t * (t * (t * 6 - 15) + 10);
+const tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3();
+
+function shotAt(p, outPos, outTgt) {
+  const seg = Math.min(p * N, N - 1e-6);
+  const i = Math.floor(seg);
+  const t = smoother(THREE.MathUtils.clamp((seg - i - 0.18) / 0.64, 0, 1)); // hold at each shot
+  const a = SHOTS[i], b = SHOTS[i + 1];
+  outPos.set(...a.pos).lerp(tmpA.set(...b.pos), t);
+  outTgt.set(...a.tgt).lerp(tmpB.set(...b.tgt), t);
+  // narrow screens: centre the figure and pull back
+  const narrow = camera.aspect < 0.9;
+  if (narrow) {
+    outPos.x *= 0.15; outTgt.x *= 0.15;
+    const back = outPos.clone().sub(outTgt).multiplyScalar(1.7);
+    outPos.copy(outTgt).add(back);
+    outTgt.y -= 0.12 * (1 - Math.abs(i + t - 3) / 3) * (p < 0.05 ? 0 : 1);
+  }
+}
+
+const camPos = new THREE.Vector3(), camTgt = new THREE.Vector3();
+const goalPos = new THREE.Vector3(), goalTgt = new THREE.Vector3();
+
+/* ---------- scroll + UI ---------- */
+let progress = 0;
+function readScroll() {
+  const max = document.documentElement.scrollHeight - innerHeight;
+  progress = max > 0 ? THREE.MathUtils.clamp(scrollY / max, 0, 1) : 0;
+}
+addEventListener("scroll", readScroll, { passive: true });
+
+const panels = [...document.querySelectorAll(".panel")];
+const title = document.getElementById("bigTitle");
+const dot = document.getElementById("dot");
+const rail = document.getElementById("rail");
+for (let i = 0; i <= N; i++) { const t = document.createElement("div"); t.className = "tick"; t.style.top = (i / N * 100) + "%"; rail.appendChild(t); }
+
+function updateUI() {
+  const s = progress * N;
+  panels.forEach((el, i) => {
+    const d = s - i, o = THREE.MathUtils.clamp(1 - Math.abs(d) * 2.6, 0, 1);
+    el.style.opacity = o;
+    el.style.pointerEvents = o > 0.5 ? "auto" : "none";
+    const base = el.classList.contains("p1") || el.classList.contains("p2") ? (innerWidth > 760 ? "translateY(-50%) " : "") : "";
+    el.style.transform = base + `translateY(${(-d * 50).toFixed(1)}px)`;
+  });
+  const to = THREE.MathUtils.clamp(1 - s * 2.4, 0, 1);
+  title.style.opacity = to;
+  title.style.transform = `translateY(${(-s * 140).toFixed(1)}px) scale(${1 + s * 0.15})`;
+  dot.style.top = `calc(${(progress * 100).toFixed(2)}% - 4px)`;
+}
+
+document.getElementById("scrollBtn").addEventListener("click", () => {
+  const max = document.documentElement.scrollHeight - innerHeight;
+  const next = Math.floor(progress * N + 0.05) + 1;
+  scrollTo({ top: next > N ? 0 : (next / N) * max, behavior: "smooth" });
+});
+const nav = document.getElementById("nav");
+document.getElementById("menuBtn").addEventListener("click", () => nav.classList.toggle("open"));
+
+/* ---------- drag to rotate + mouse light ---------- */
+let rotTarget = 0, rotVel = 0, dragging = false, lastX = 0, lastMove = 0;
+const mouse = new THREE.Vector2();
+canvas.addEventListener("pointerdown", e => { dragging = true; lastX = e.clientX; rotVel = 0; canvas.classList.add("dragging"); canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener("pointermove", e => {
+  if (!dragging) return;
+  const dx = e.clientX - lastX; lastX = e.clientX;
+  rotTarget += dx * 0.009; rotVel = dx * 0.009; lastMove = performance.now();
+});
+const endDrag = () => { dragging = false; canvas.classList.remove("dragging"); };
+canvas.addEventListener("pointerup", endDrag);
+canvas.addEventListener("pointercancel", endDrag);
+addEventListener("pointermove", e => { mouse.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight * 2 - 1)); });
+
+/* ---------- countdown (same target as the home page) ---------- */
+const target = new Date("2026-12-18T00:00:00").getTime();
+function diffParts() {
+  let cursor = new Date(), months = 0;
+  while (true) {
+    const next = new Date(cursor); next.setMonth(next.getMonth() + 1);
+    if (next.getTime() > target) break;
+    months++; cursor = next;
+  }
+  const rem = Math.max(0, target - cursor.getTime());
+  return { months, days: Math.floor(rem / 86400000), hours: Math.floor((rem / 3600000) % 24),
+           minutes: Math.floor((rem / 60000) % 60), seconds: Math.floor((rem / 1000) % 60) };
+}
+function tick() {
+  const d = diffParts();
+  for (const k of ["months", "days", "hours", "minutes", "seconds"]) document.getElementById(k).textContent = String(d[k]).padStart(2, "0");
+}
+tick(); setInterval(tick, 1000);
+
+/* ---------- resize ---------- */
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.fov = camera.aspect < 0.9 ? 34 : 30;
+  camera.updateProjectionMatrix();
+}
+addEventListener("resize", resize);
+resize(); readScroll();
+shotAt(progress, camPos, camTgt);
+
+/* ---------- loop ---------- */
+const clock = new THREE.Clock();
+let first = true;
+function frame() {
+  const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
+
+  // camera follows the scroll shot, smoothed
+  shotAt(progress, goalPos, goalTgt);
+  const k = 1 - Math.exp(-dt * 5);
+  camPos.lerp(goalPos, k); camTgt.lerp(goalTgt, k);
+  camera.position.copy(camPos).add(tmpA.set(mouse.x * 0.04, mouse.y * 0.03, 0));
+  camera.lookAt(camTgt);
+
+  // rotation: drag + inertia + gentle idle sway
+  if (!dragging) {
+    rotTarget += rotVel; rotVel *= 0.94;
+    if (performance.now() - lastMove > 2500) rotTarget += dt * 0.12;
+  }
+  figureRoot.rotation.y += (rotTarget + Math.sin(t * 0.4) * 0.04 - figureRoot.rotation.y) * 0.12;
+
+  // breathing / idle
+  proc.position.y = Math.sin(t * 1.2) * 0.003;
+  crown.rotation.y = t * 0.35;
+  shards.forEach((s, i) => { s.position.y = Math.sin(t * 1.6 + i) * 0.012; s.rotation.y = t * 0.8 + i; });
+  pulse.forEach((s, i) => { s.material.opacity = 0.65 + Math.sin(t * 2.2 + i) * 0.25; });
+  ring.material.opacity = 0.28 + Math.sin(t * 1.5) * 0.08;
+  ring2.rotation.z = t * 0.2;
+
+  // cloth sway
+  for (const c of cloths) {
+    const pos = c.mesh.geometry.attributes.position, b = c.base;
+    for (let i = 0; i < pos.count; i++) {
+      const y = b[i * 3 + 1], u = 0.5 - y / c.h;
+      pos.array[i * 3 + 2] = b[i * 3 + 2] - Math.sin(t * 1.3 + y * 4 + b[i * 3] * 3) * 0.018 * u * u;
+    }
+    pos.needsUpdate = true;
+    c.mesh.geometry.computeVertexNormals();
+  }
+
+  // embers rise
+  for (let i = 0; i < EMBERS; i++) {
+    ePos[i * 3 + 1] += eSpd[i] * dt;
+    ePos[i * 3] += Math.sin(t + i) * 0.0008;
+    if (ePos[i * 3 + 1] > 2.7) seedEmber(i, false);
+  }
+  eGeo.attributes.position.needsUpdate = true;
+
+  // smoke drift
+  for (const s of smoke) {
+    s.userData.a += s.userData.sp * dt;
+    s.position.x = Math.cos(s.userData.a) * s.userData.r;
+    s.position.z = Math.sin(s.userData.a) * s.userData.r;
+    s.material.rotation += s.userData.rot * dt;
+  }
+
+  // light follows the mouse
+  mouseLight.position.x += (mouse.x * 1.6 - mouseLight.position.x) * 0.08;
+  mouseLight.position.y += (1.2 + mouse.y * 0.8 - mouseLight.position.y) * 0.08;
+
+  updateUI();
+  renderer.render(scene, camera);
+
+  if (first) { first = false; document.getElementById("loader").classList.add("done"); }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
